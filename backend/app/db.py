@@ -16,10 +16,11 @@ def get_supabase_client():
     if settings.SUPABASE_URL and not settings.SUPABASE_URL.startswith("https://mock"):
         try:
             from supabase import create_client
-            if settings.SUPABASE_PUBLISHABLE_KEY and settings.SUPABASE_PUBLISHABLE_KEY.startswith("eyJ"):
+            key = settings.SUPABASE_PUBLISHABLE_KEY
+            if key and (key.startswith("eyJ") or key.startswith("sb_publishable")):
                 _supabase_client = create_client(
                     settings.SUPABASE_URL,
-                    settings.SUPABASE_PUBLISHABLE_KEY
+                    key
                 )
                 return _supabase_client
         except Exception as e:
@@ -37,10 +38,11 @@ def get_supabase_admin_client():
     if settings.SUPABASE_URL and not settings.SUPABASE_URL.startswith("https://mock"):
         try:
             from supabase import create_client
-            if settings.SUPABASE_SERVICE_ROLE_KEY and settings.SUPABASE_SERVICE_ROLE_KEY.startswith("eyJ"):
+            key = settings.admin_key
+            if key and (key.startswith("eyJ") or key.startswith("sb_secret")):
                 _supabase_admin_client = create_client(
                     settings.SUPABASE_URL,
-                    settings.SUPABASE_SERVICE_ROLE_KEY
+                    key
                 )
                 return _supabase_admin_client
         except Exception as e:
@@ -109,6 +111,6 @@ class MockSupabaseClient:
                     def remove(self, paths: list):
                         return paths
                     def create_signed_url(self, path: str, expires_in: int):
-                        return {"signedURL": f"http://localhost:8000/mock-storage/{path}"}
+                        return {"signedURL": f"http://localhost:8001/mock-storage/{path}"}
                 return MockBucket()
         return MockStorage()

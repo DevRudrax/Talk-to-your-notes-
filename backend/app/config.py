@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = "https://mock.supabase.co"
     SUPABASE_PUBLISHABLE_KEY: str = "mock-publishable-key"
     SUPABASE_SERVICE_ROLE_KEY: str = "mock-service-role-key"
+    SUPABASE_SECRET_KEY: Optional[str] = None
+    SUPABASE_JWKS_URL: Optional[str] = None
 
     GEMINI_API_KEY: str = "mock-gemini-key"
     LLM_MODEL: str = "gemini-1.5-flash"
@@ -18,7 +20,7 @@ class Settings(BaseSettings):
     EMBEDDING_DIMENSION: int = 768
 
     FRONTEND_URL: str = "http://localhost:5173"
-    BACKEND_URL: str = "http://localhost:8000"
+    BACKEND_URL: str = "http://localhost:8001"
     MAX_FILE_SIZE_MB: int = 25
     TOP_K: int = 5
     SIMILARITY_THRESHOLD: float = 0.3
@@ -31,6 +33,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    @property
+    def admin_key(self) -> str:
+        return self.SUPABASE_SECRET_KEY or self.SUPABASE_SERVICE_ROLE_KEY
 
 
 settings = Settings()
