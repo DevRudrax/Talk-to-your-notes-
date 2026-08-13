@@ -70,7 +70,8 @@ export interface CollectionItem {
 export const api = {
   // Documents
   async getDocuments(collectionId?: string): Promise<DocumentRecord[]> {
-    const url = new URL(`${BACKEND_URL}/api/documents`);
+    const baseUrl = BACKEND_URL || (typeof window !== "undefined" ? window.location.origin : "");
+    const url = new URL(`${baseUrl}/api/documents`);
     if (collectionId) url.searchParams.append("collection_id", collectionId);
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error("Failed to fetch documents");
