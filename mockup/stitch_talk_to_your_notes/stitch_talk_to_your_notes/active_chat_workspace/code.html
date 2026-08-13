@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Talk to Your Notes - Notes AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#993100",
+                        "surface": "#fcf9f8",
+                        "on-primary-container": "#efefff",
+                        "on-background": "#1c1b1b",
+                        "surface-dim": "#dcd9d9",
+                        "primary": "#0040df",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#c8c6c3",
+                        "outline": "#747688",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#f3f0ef",
+                        "tertiary-fixed": "#ffdbcf",
+                        "secondary-container": "#e4e2df",
+                        "tertiary-fixed-dim": "#ffb59b",
+                        "on-primary-fixed-variant": "#0035bd",
+                        "surface-container": "#f0eded",
+                        "background": "#fcf9f8",
+                        "primary-fixed-dim": "#b8c3ff",
+                        "on-secondary-fixed": "#1b1c1a",
+                        "secondary-fixed": "#e4e2df",
+                        "on-primary-fixed": "#001355",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed": "#380d00",
+                        "on-surface-variant": "#434656",
+                        "on-secondary-fixed-variant": "#474745",
+                        "surface-bright": "#fcf9f8",
+                        "tertiary-container": "#c24100",
+                        "on-tertiary-fixed-variant": "#812900",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#c4c5d9",
+                        "on-tertiary-container": "#ffece6",
+                        "secondary": "#5f5e5c",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-surface": "#1c1b1b",
+                        "surface-container-high": "#eae7e7",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#104af0",
+                        "on-secondary-container": "#656462",
+                        "surface-variant": "#e5e2e1",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#b8c3ff",
+                        "surface-container-low": "#f6f3f2",
+                        "primary-container": "#2d5bff",
+                        "inverse-surface": "#313030",
+                        "primary-fixed": "#dde1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "stack-md": "16px",
+                        "container-padding": "24px",
+                        "stack-lg": "32px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "label-md": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-lg": ["Geist"],
+                        "label-sm": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "500" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Geist', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-full overflow-hidden flex font-body-md text-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="fixed h-screen w-[250px] left-0 top-0 border-r border-outline-variant bg-surface flex flex-col h-full py-container-padding z-20">
+<div class="px-stack-md pb-stack-lg border-b border-outline-variant">
+<div class="flex items-center gap-stack-sm mb-stack-md">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold">NA</div>
+<div class="text-headline-md font-headline-md font-bold text-on-surface">Notes AI</div>
+</div>
+<button class="w-full flex items-center justify-between bg-on-surface text-surface px-4 py-2.5 rounded-lg transition-all duration-150 ease-out hover:bg-inverse-surface active:scale-[0.98]">
+<span class="font-medium text-body-md">New Chat</span>
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<div class="px-stack-md py-stack-md flex flex-col gap-unit">
+<a class="flex items-center gap-stack-sm bg-secondary-container text-on-secondary-container font-medium px-stack-md py-stack-sm rounded-xl transition-all duration-150 ease-out active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span>Chat</span>
+</a>
+<a class="flex items-center gap-stack-sm text-on-surface-variant px-stack-md py-stack-sm hover:bg-surface-container rounded-xl transition-colors duration-150 ease-out active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span>Notes</span>
+</a>
+<a class="flex items-center gap-stack-sm text-on-surface-variant px-stack-md py-stack-sm hover:bg-surface-container rounded-xl transition-colors duration-150 ease-out active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[20px]">folder_copy</span>
+<span>Collections</span>
+</a>
+</div>
+<div class="px-stack-md py-stack-sm flex-1 overflow-y-auto">
+<h3 class="text-label-sm font-label-sm text-outline uppercase tracking-wider mb-stack-sm px-stack-sm">Recent Chats</h3>
+<ul class="flex flex-col gap-[2px]">
+<li><a class="block text-body-md text-on-surface-variant truncate py-1.5 px-stack-sm rounded hover:bg-surface-container transition-colors" href="#">OS revision notes</a></li>
+<li><a class="block text-body-md text-on-surface-variant truncate py-1.5 px-stack-sm rounded hover:bg-surface-container transition-colors" href="#">Java inheritance patterns</a></li>
+<li><a class="block text-body-md text-on-surface-variant truncate py-1.5 px-stack-sm rounded hover:bg-surface-container transition-colors" href="#">Distributed systems summary</a></li>
+<li><a class="block text-body-md text-on-surface-variant truncate py-1.5 px-stack-sm rounded hover:bg-surface-container transition-colors" href="#">Ethics in AI reading list</a></li>
+</ul>
+</div>
+<div class="px-stack-md pt-stack-md mt-auto border-t border-outline-variant flex flex-col gap-unit">
+<a class="flex items-center gap-stack-sm text-on-surface-variant px-stack-md py-stack-sm hover:bg-surface-container rounded-xl transition-colors duration-150 ease-out" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-stack-sm text-on-surface-variant px-stack-md py-stack-sm hover:bg-surface-container rounded-xl transition-colors duration-150 ease-out" href="#">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span>Profile</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-250px)] h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-container-padding z-10">
+<div class="flex items-center h-full">
+<span class="text-headline-md font-headline-md font-bold text-on-surface">Database Concepts</span>
+<div class="ml-stack-lg flex gap-stack-md h-full items-end pb-[1px]">
+<a class="text-on-surface font-bold border-b-2 border-primary pb-3 px-1 text-label-md font-label-md" href="#">Current Chat</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors pb-3 px-1 text-label-md font-label-md" href="#">All Notes</a>
+</div>
+</div>
+<div class="flex items-center gap-stack-sm">
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-colors duration-150 ease-out flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-colors duration-150 ease-out flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-colors duration-150 ease-out flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="ml-[250px] mt-16 w-full h-[calc(100vh-64px)] flex relative">
+<!-- Chat Area -->
+<div class="flex-1 flex flex-col h-full bg-surface">
+<!-- Scrollable Chat History -->
+<div class="flex-1 overflow-y-auto px-container-padding py-stack-lg flex flex-col gap-stack-lg w-full max-w-3xl mx-auto pb-40">
+<!-- User Message -->
+<div class="flex gap-stack-md w-full justify-end">
+<div class="bg-surface-container-highest px-5 py-3.5 rounded-2xl rounded-tr-sm max-w-[85%] border border-outline-variant">
+<p class="text-body-md font-body-md text-on-surface">Explain normalization and the difference between 2NF and 3NF.</p>
+</div>
+</div>
+<!-- AI Response -->
+<div class="flex gap-stack-md w-full">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0 mt-1">
+<span class="material-symbols-outlined text-[18px]">temp_preferences_custom</span>
+</div>
+<div class="flex-1 max-w-prose">
+<div class="prose prose-sm max-w-none text-on-surface space-y-4">
+<p class="text-body-lg font-body-lg text-on-surface">Normalization is the process of organizing data in a database to reduce redundancy and improve data integrity. It involves dividing large tables into smaller, related tables and defining relationships between them based on specific rules (Normal Forms).</p>
+<h3 class="text-headline-md font-headline-md font-bold mt-6 mb-2">Key Differences: 2NF vs. 3NF</h3>
+<div class="border border-outline-variant rounded-lg overflow-hidden my-4 bg-surface-container-lowest">
+<table class="w-full text-left text-body-md">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr>
+<th class="px-4 py-3 font-semibold text-on-surface">Feature</th>
+<th class="px-4 py-3 font-semibold text-on-surface border-l border-outline-variant">2nd Normal Form (2NF)</th>
+<th class="px-4 py-3 font-semibold text-on-surface border-l border-outline-variant">3rd Normal Form (3NF)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr>
+<td class="px-4 py-3 font-medium text-on-surface-variant">Prerequisite</td>
+<td class="px-4 py-3 border-l border-outline-variant">Must be in 1NF.</td>
+<td class="px-4 py-3 border-l border-outline-variant">Must be in 2NF.</td>
+</tr>
+<tr class="bg-surface-container-low/30">
+<td class="px-4 py-3 font-medium text-on-surface-variant">Core Rule</td>
+<td class="px-4 py-3 border-l border-outline-variant">No partial dependency. All non-key attributes must depend on the <em>entire</em> primary key.</td>
+<td class="px-4 py-3 border-l border-outline-variant">No transitive dependency. Non-key attributes must not depend on other non-key attributes.</td>
+</tr>
+<tr>
+<td class="px-4 py-3 font-medium text-on-surface-variant">Focus</td>
+<td class="px-4 py-3 border-l border-outline-variant">Composite primary keys.</td>
+<td class="px-4 py-3 border-l border-outline-variant">Relationships between non-key columns.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="text-body-md font-body-md">In short: 2NF ensures data relates directly to the primary key, while 3NF ensures data doesn't relate indirectly through another non-key column.</p>
+</div>
+<!-- Sources Section -->
+<div class="mt-stack-md pt-stack-sm">
+<div class="flex items-center gap-unit mb-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">library_books</span>
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">Sources · 2</span>
+</div>
+<div class="flex flex-wrap gap-stack-sm">
+<button class="flex items-center gap-unit px-3 py-1.5 bg-surface-container border border-outline-variant rounded hover:bg-surface-container-high transition-colors text-label-md font-label-md">
+<span class="material-symbols-outlined text-[14px]">article</span>
+<span>DBMS.md</span>
+</button>
+<button class="flex items-center gap-unit px-3 py-1.5 bg-surface-container border border-outline-variant rounded hover:bg-surface-container-high transition-colors text-label-md font-label-md">
+<span class="material-symbols-outlined text-[14px]">picture_as_pdf</span>
+<span>Database Notes.pdf</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Chat Input Area Fixed at Bottom -->
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-surface via-surface to-transparent pt-8 pb-6 px-container-padding w-full max-w-4xl mx-auto z-10">
+<div class="relative bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all overflow-hidden flex flex-col">
+<textarea class="w-full bg-transparent border-none resize-none px-4 py-4 text-body-md font-body-md text-on-surface placeholder:text-outline focus:ring-0 min-h-[60px] max-h-[200px]" placeholder="Ask a question about your notes..." rows="1"></textarea>
+<div class="flex justify-between items-center px-3 pb-3">
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="px-4 py-1.5 bg-on-surface text-surface rounded hover:bg-inverse-surface transition-colors font-medium text-label-md font-label-md flex items-center gap-unit">
+<span>Send</span>
+<span class="material-symbols-outlined text-[16px]">send</span>
+</button>
+</div>
+</div>
+<div class="text-center mt-2">
+<span class="text-label-sm font-label-sm text-outline">Notes AI can make mistakes. Verify important information.</span>
+</div>
+</div>
+</div>
+<!-- Right Side: Source Viewer -->
+<aside class="w-[350px] border-l border-outline-variant bg-surface flex flex-col h-full flex-shrink-0">
+<div class="px-4 py-3 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">article</span>
+<h3 class="text-body-md font-body-md font-semibold text-on-surface">DBMS.md</h3>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+<div class="p-6 overflow-y-auto flex-1 font-mono text-sm leading-relaxed text-on-surface-variant bg-surface-container-lowest">
+<p class="mb-4"># Normalization Rules</p>
+<p class="mb-4">...to eliminate redundant data and ensure data dependencies make sense.</p>
+<p class="mb-2 font-semibold text-on-surface">Second Normal Form (2NF)</p>
+<p class="mb-4">A relation is in 2NF if it is in 1NF and every non-prime attribute is fully functionally dependent on the primary key. <mark class="bg-primary-container/40 text-on-surface px-1 rounded">This means no partial dependency exists.</mark></p>
+<p class="mb-2 font-semibold text-on-surface">Third Normal Form (3NF)</p>
+<p class="mb-4 bg-tertiary-container/10 px-2 py-1 rounded border-l-2 border-tertiary">A relation is in 3NF if it is in 2NF and no non-prime attribute is transitively dependent on the primary key.</p>
+<p>...</p>
+</div>
+</aside>
+</main>
+</body></html>
