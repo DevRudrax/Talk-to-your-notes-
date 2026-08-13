@@ -10,6 +10,7 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ collecti
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [reindexingId, setReindexingId] = useState<string | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -44,6 +45,18 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ collecti
       setErrorMsg(err.message || "Failed to upload file");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleReindex = async (id: string) => {
+    setReindexingId(id);
+    try {
+      await api.reindexDocument(id);
+      await fetchDocuments();
+    } catch (e) {
+      console.error("Failed to re-index document", e);
+    } finally {
+      setReindexingId(null);
     }
   };
 
@@ -213,7 +226,17 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ collecti
                       <td className="px-4 py-3 text-outline">
                         {new Date(doc.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right space-x-1">
+                        <button
+                          onClick={() => handleReindex(doc.id)}
+                          disabled={reindexingId === doc.id}
+                          className="p-1 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors"
+                          title="Re-index Document"
+                        >
+                          <span className={`material-symbols-outlined text-[18px] ${reindexingId === doc.id ? 'animate-spin' : ''}`}>
+                            refresh
+                          </span>
+                        </button>
                         <button
                           onClick={() => handleDelete(doc.id)}
                           className="p-1 text-on-surface-variant hover:text-error hover:bg-error-container/20 rounded transition-colors"

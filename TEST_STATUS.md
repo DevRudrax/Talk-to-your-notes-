@@ -1,32 +1,21 @@
-# TEST STATUS
+# TEST STATUS — Talk to Your Notes Evaluation Suite
 
-## Automated Test Suites
+## Backend Unit & Integration Tests (`pytest`)
+- `tests/test_chunking.py::test_chunking_service`: PASSED
+- `tests/test_citation_validator.py::test_structured_citation_validation`: PASSED
+- `tests/test_context_packer.py::test_context_packer_deduplication_and_budget`: PASSED
+- `tests/test_extraction.py::test_markdown_extraction`: PASSED
+- `tests/test_extraction.py::test_txt_extraction`: PASSED
+- `tests/test_rag_eval.py::test_rag_dbms_query`: PASSED
+- `tests/test_rag_eval.py::test_rag_3nf_query`: PASSED
+- `tests/test_rag_eval.py::test_rag_absent_query`: PASSED
+- `tests/test_rag_eval.py::test_rag_summarise_entire_notes`: PASSED
+- `tests/test_rag_eval.py::test_rag_query_rewriting`: PASSED
 
-### Unit Tests
-- [x] Backend Document Extraction (PDF, MD, TXT)
-- [x] Backend Hierarchical Chunking
-- [x] ContextPacker Token Budgeting & Deduplication
-- [x] Citation Validation Logic
-- [x] Query Rewriter
+**Result**: 10/10 PASSED (100% Pass Rate).
 
-### Integration Tests
-- [x] Ingestion Pipeline (Upload -> Storage -> DB -> Chunking -> Embedding -> Vector DB)
-- [x] Supabase RPC Vector Retrieval Function
-- [x] Conversation & Message API Endpoints
-
-### Security & RLS Tests
-- [x] User A vs User B Document Isolation
-- [x] User A vs User B Vector Search Isolation
-- [x] User A vs User B Conversation Isolation
-
-### RAG Evaluation Suite
-- [x] Groundedness Test Cases
-- [x] Source Citation Precision Test Cases
-- [x] "Information Not Found" Fallback Test Cases
-- [x] Multi-Document Retrieval Test Cases
-
-## Execution History
-| Date | Suite | Total | Passed | Failed | Status |
-|------|-------|-------|--------|--------|--------|
-| 2026-08-13 | Pytest Backend & RAG Eval | 6 | 6 | 0 | PASS |
-| 2026-08-13 | Vite React TS Production Build | 22 modules | 22 | 0 | PASS |
+## Frontend Production Build (`npm run build`)
+- Framework: React + TypeScript + Vite
+- Modules transformed: 22/22
+- Output bundle: `dist/assets/index-a_JCwv6B.css`, `dist/assets/index-COesi3p-.js`
+- **Result**: PASSED (0 build errors).

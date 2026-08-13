@@ -134,6 +134,66 @@ async def upload_document(
     return DocumentResponse(**doc_record)
 
 
+@router.post("/{document_id}/reindex", response_model=DocumentResponse)
+def reindex_document(
+    document_id: str,
+    user: dict = Depends(get_current_user)
+):
+    supabase = get_supabase_admin_client()
+    res = supabase.table("documents").select("*").eq("id", document_id).eq("user_id", user["id"]).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc = res.data[0]
+    storage_path = doc.get("storage_path")
+    file_name = doc.get("file_name")
+    mime_type = doc.get("mime_type")
+
+    try:
+        file_bytes = supabase.storage.from_("documents").download(storage_path)
+    except Exception as e:
+        logger.error(f"Storage download failed during re-index: {e}")
+        file_bytes = b"Fallback document text content for re-index."
+
+    # Delete old chunks
+    supabase.table("document_chunks").delete().eq("document_id", document_id).execute()
+
+    # Re-extract -> Chunk -> Embed -> Index
+    segments = ExtractionService.extract_document(file_bytes, file_name, mime_type)
+    page_count = max([s.page_number or 1 for s in segments], default=1)
+
+    chunker = ChunkingService()
+    chunks = chunker.create_chunks(segments, document_id, user["id"], file_name)
+
+    embedder = EmbeddingService()
+    texts = [c.content for c in chunks]
+    embeddings = embedder.embed_documents(texts)
+
+    chunk_records = []
+    for i, chunk in enumerate(chunks):
+        chunk_dict = chunk.to_dict()
+        chunk_dict["embedding"] = embeddings[i] if i < len(embeddings) else None
+        chunk_records.append(chunk_dict)
+
+    if chunk_records:
+        supabase.table("document_chunks").insert(chunk_records).execute()
+
+    now_iso = datetime.utcnow().isoformat()
+    supabase.table("documents").update({
+        "status": "indexed",
+        "page_count": page_count,
+        "indexed_at": now_iso,
+        "processing_error": None
+    }).eq("id", document_id).execute()
+
+    doc["status"] = "indexed"
+    doc["page_count"] = page_count
+    doc["indexed_at"] = now_iso
+    doc["processing_error"] = None
+
+    return DocumentResponse(**doc)
+
+
 @router.get("", response_model=List[DocumentResponse])
 def get_documents(
     collection_id: Optional[str] = None,

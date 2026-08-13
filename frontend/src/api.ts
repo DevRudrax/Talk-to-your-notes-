@@ -98,6 +98,14 @@ export const api = {
     if (!res.ok) throw new Error("Failed to delete document");
   },
 
+  async reindexDocument(documentId: string): Promise<DocumentRecord> {
+    const res = await fetch(`${BACKEND_URL}/api/documents/${documentId}/reindex`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to re-index document");
+    return res.json();
+  },
+
   // Chat
   async sendChatMessage(message: string, conversationId?: string, collectionId?: string): Promise<ChatResponse> {
     const res = await fetch(`${BACKEND_URL}/api/chat`, {

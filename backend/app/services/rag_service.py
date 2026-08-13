@@ -6,6 +6,7 @@ from app.config import settings
 from app.db import get_supabase_admin_client
 from app.services.retrieval_service import RetrievalService, RetrievedChunk
 from app.services.context_packer import ContextPacker, PackedContext
+from app.services.summarization_service import SummarizationService
 
 logger = logging.getLogger("talk_to_your_notes.rag_service")
 
@@ -74,13 +75,17 @@ class RAGResponse:
         citations: List[VerifiedCitation],
         grounded: bool,
         retrieved_chunks_count: int,
-        context_tokens: int
+        context_tokens: int,
+        rewritten_query: Optional[str] = None,
+        debug_info: Optional[Dict[str, Any]] = None
     ):
         self.answer = answer
         self.citations = citations
         self.grounded = grounded
         self.retrieved_chunks_count = retrieved_chunks_count
         self.context_tokens = context_tokens
+        self.rewritten_query = rewritten_query
+        self.debug_info = debug_info
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -88,7 +93,9 @@ class RAGResponse:
             "citations": [c.to_dict() for c in self.citations],
             "grounded": self.grounded,
             "retrieved_chunks_count": self.retrieved_chunks_count,
-            "context_tokens": self.context_tokens
+            "context_tokens": self.context_tokens,
+            "rewritten_query": self.rewritten_query,
+            "debug_info": self.debug_info
         }
 
 
@@ -97,21 +104,40 @@ class RAGService:
     def __init__(
         self,
         retrieval_service: Optional[RetrievalService] = None,
-        context_packer: Optional[ContextPacker] = None
+        context_packer: Optional[ContextPacker] = None,
+        summarization_service: Optional[SummarizationService] = None
     ):
         self.retrieval_service = retrieval_service or RetrievalService()
         self.context_packer = context_packer or ContextPacker()
+        self.summarization_service = summarization_service or SummarizationService()
 
     def generate_grounded_answer(
         self,
         user_query: str,
         user_id: str,
         collection_id: Optional[str] = None,
-        conversation_history: Optional[List[Dict[str, str]]] = None
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+        include_debug: bool = False
     ) -> RAGResponse:
-        # 1. Retrieve candidate document chunks from pgvector
+        # 1. Query Type Routing — Check if user is asking for a whole-document summary
+        q_lower = user_query.lower().strip()
+        summary_triggers = ["summarise the entire notes", "summarise all notes", "summarize the entire notes", "summarize my notes", "overall summary of notes", "give me a summary of my notes"]
+        if any(t in q_lower for t in summary_triggers) or q_lower == "summarise notes" or q_lower == "summarize notes":
+            summary_text = self.summarization_service.summarize_all_user_notes(user_id=user_id, collection_id=collection_id)
+            return RAGResponse(
+                answer=summary_text,
+                citations=[],
+                grounded=True,
+                retrieved_chunks_count=0,
+                context_tokens=0
+            )
+
+        # 2. Query Rewriting for Conversational Follow-up
+        retrieval_query = self._rewrite_query_with_history(user_query, conversation_history)
+
+        # 3. Retrieve candidate document chunks from pgvector
         retrieved_chunks = self.retrieval_service.retrieve_context(
-            user_query=user_query,
+            user_query=retrieval_query,
             user_id=user_id,
             collection_id=collection_id
         )
@@ -123,14 +149,15 @@ class RAGService:
                 citations=[],
                 grounded=False,
                 retrieved_chunks_count=0,
-                context_tokens=0
+                context_tokens=0,
+                rewritten_query=retrieval_query if retrieval_query != user_query else None
             )
 
-        # 2. Pack context within token budget
+        # 4. Pack context within token budget
         packed_context = self.context_packer.pack_chunks(retrieved_chunks)
         packed_chunks_by_id = {c.id: c for c in packed_context.packed_chunks}
 
-        # 3. Construct prompt
+        # 5. Construct prompt
         formatted_history = ""
         if conversation_history:
             history_lines = [f"{m.get('role', 'user').upper()}: {m.get('content', '')}" for m in conversation_history[-4:]]
@@ -143,13 +170,13 @@ class RAGService:
             f"USER QUESTION: {user_query}\n"
         )
 
-        # 4. Generate response via Google Gemini API
+        # 6. Generate response via Google Gemini API
         raw_json_str = self._call_gemini(full_prompt, packed_context)
 
-        # 5. Parse & Validate structured JSON response
+        # 7. Parse & Validate structured JSON response
         answer_text, raw_citations, is_grounded = self._parse_structured_response(raw_json_str, packed_context)
 
-        # 6. Resolve trusted citations against backend chunk records (anti-hallucination)
+        # 8. Resolve trusted citations against backend chunk records (anti-hallucination)
         verified_citations = []
         for cit in raw_citations:
             cid = cit.get("chunk_id")
@@ -170,15 +197,52 @@ class RAGService:
                     )
                 )
 
+        debug_info = None
+        if include_debug:
+            dropped = [c.to_dict() for c in retrieved_chunks if c.id not in packed_chunks_by_id]
+            debug_info = {
+                "original_query": user_query,
+                "retrieval_query": retrieval_query,
+                "retrieved_chunks": [c.to_dict() for c in retrieved_chunks],
+                "similarity_scores": {c.id: c.similarity for c in retrieved_chunks},
+                "selected_chunks": [c.to_dict() for c in packed_context.packed_chunks],
+                "dropped_chunks": dropped,
+                "estimated_context_tokens": packed_context.total_tokens,
+                "model_response": raw_json_str,
+                "validated_citations": [c.to_dict() for c in verified_citations]
+            }
+
         return RAGResponse(
             answer=answer_text,
             citations=verified_citations,
             grounded=is_grounded and bool(verified_citations or "couldn't find" in answer_text.lower()),
             retrieved_chunks_count=len(retrieved_chunks),
-            context_tokens=packed_context.total_tokens
+            context_tokens=packed_context.total_tokens,
+            rewritten_query=retrieval_query if retrieval_query != user_query else None,
+            debug_info=debug_info
         )
 
-    def _call_gemini(self, prompt: str, packed_context: Optional[PackedContext] = None) -> str:
+    def _rewrite_query_with_history(
+        self,
+        user_query: str,
+        conversation_history: Optional[List[Dict[str, str]]] = None
+    ) -> str:
+        if not conversation_history or len(user_query.split()) > 7:
+            return user_query
+
+        # Conversational short follow-up detection (e.g. "What about 3NF?")
+        prev_user_msgs = [m.get("content", "") for m in conversation_history if m.get("role") == "user"]
+        if not prev_user_msgs:
+            return user_query
+
+        last_topic = prev_user_msgs[-1]
+        prompt = (
+            f"Given the previous question: '{last_topic}'\n"
+            f"And the follow-up question: '{user_query}'\n"
+            f"Rewrite the follow-up question into a single standalone search query that includes full topic context.\n"
+            f"Output ONLY the standalone search query string."
+        )
+
         if (
             settings.GEMINI_API_KEY
             and not settings.GEMINI_API_KEY.startswith("mock")
@@ -192,11 +256,41 @@ class RAGService:
                 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(model.generate_content, prompt)
-                    response = future.result(timeout=10.0)
+                    response = future.result(timeout=4.0)
                     if response and response.text:
-                        return response.text
+                        return response.text.strip()
             except Exception as e:
-                logger.error(f"Gemini LLM call failed ({settings.LLM_MODEL}): {e}")
+                logger.warning(f"Query rewriting failed: {e}")
+
+        return f"{last_topic} {user_query}"
+
+    def _call_gemini(self, prompt: str, packed_context: Optional[PackedContext] = None) -> str:
+        if (
+            settings.GEMINI_API_KEY
+            and not settings.GEMINI_API_KEY.startswith("mock")
+            and not settings.GEMINI_API_KEY.startswith("gen-lang-client")
+        ):
+            import time
+            import google.generativeai as genai
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            model_name = settings.LLM_MODEL or "gemini-flash-latest"
+            model = genai.GenerativeModel(model_name)
+
+            for attempt in range(3):
+                try:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(model.generate_content, prompt)
+                        response = future.result(timeout=10.0)
+                        if response and response.text:
+                            return response.text.strip()
+                except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str or "quota" in err_str.lower():
+                        logger.warning(f"Gemini rate limit hit (429), retrying in {3 * (attempt + 1)}s...")
+                        time.sleep(3 * (attempt + 1))
+                        continue
+                    logger.error(f"Gemini LLM call failed ({settings.LLM_MODEL}): {e}")
+                    break
 
         # Fallback offline response dynamically summarizing packed chunks
         mock_cits = []

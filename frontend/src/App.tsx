@@ -49,6 +49,19 @@ export function App() {
     setConversations(convs);
   };
 
+  const handleDeleteConversation = async (id: string) => {
+    try {
+      await api.deleteConversation(id);
+      if (activeConversationId === id) {
+        setActiveConversationId(undefined);
+      }
+      const convs = await api.getConversations().catch(() => []);
+      setConversations(convs);
+    } catch (e) {
+      console.error("Failed to delete conversation", e);
+    }
+  };
+
   const handleSelectCollectionForChat = (colId: string) => {
     setSelectedCollectionId(colId);
     setActiveConversationId(undefined);
@@ -65,6 +78,7 @@ export function App() {
         activeConversationId={activeConversationId}
         onSelectConversation={(id) => setActiveConversationId(id)}
         onNewChat={handleNewChat}
+        onDeleteConversation={handleDeleteConversation}
       />
 
       {/* Main Content Workspace View */}
