@@ -23,11 +23,11 @@ class EmbeddingService:
         if not texts:
             return []
 
-        # Attempt to use live Google Gemini API if configured with valid format
+        # Attempt to use live Google Gemini API if configured with valid key
         if (
             settings.GEMINI_API_KEY
             and not settings.GEMINI_API_KEY.startswith("mock")
-            and settings.GEMINI_API_KEY.startswith("AIzaSy")
+            and not settings.GEMINI_API_KEY.startswith("gen-lang-client")
         ):
             try:
                 import google.generativeai as genai

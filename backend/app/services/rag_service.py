@@ -182,7 +182,7 @@ class RAGService:
         if (
             settings.GEMINI_API_KEY
             and not settings.GEMINI_API_KEY.startswith("mock")
-            and settings.GEMINI_API_KEY.startswith("AIzaSy")
+            and not settings.GEMINI_API_KEY.startswith("gen-lang-client")
         ):
             try:
                 import google.generativeai as genai
