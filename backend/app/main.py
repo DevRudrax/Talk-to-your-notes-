@@ -42,6 +42,15 @@ def root():
     }
 
 
+@app.get("/api")
+def api_root():
+    return {
+        "app": "Talk to Your Notes API",
+        "status": "running",
+        "docs": "/docs"
+    }
+
+
 @app.get("/api/health")
 def health_check():
     return {
