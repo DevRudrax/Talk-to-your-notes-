@@ -46,4 +46,10 @@ class Settings(BaseSettings):
         return self.SUPABASE_SECRET_KEY or self.SUPABASE_SERVICE_ROLE_KEY
 
 
+# Automatically map common environment variable typos from hosting environments
+if "GENINI_API_KEY" in os.environ and "GEMINI_API_KEY" not in os.environ:
+    os.environ["GEMINI_API_KEY"] = os.environ["GENINI_API_KEY"]
+if "LLN_MODEL" in os.environ and "LLM_MODEL" not in os.environ:
+    os.environ["LLM_MODEL"] = os.environ["LLN_MODEL"]
+
 settings = Settings()
