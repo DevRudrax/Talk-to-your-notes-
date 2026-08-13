@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: Optional[str] = None
 
     GEMINI_API_KEY: str = "mock-gemini-key"
-    LLM_MODEL: str = "gemini-flash-latest"
+    LLM_MODEL: str = "gemini-3.5-flash"
     EMBEDDING_MODEL: str = "text-embedding-004"
     EMBEDDING_DIMENSION: int = 768
 

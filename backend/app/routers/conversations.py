@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from app.auth import get_current_user
 from app.db import get_supabase_admin_client
-from app.routers.chat import CitationResponse
+from app.routers.chat import CitationSchema
 import logging
 
 logger = logging.getLogger("talk_to_your_notes.conversations_router")
@@ -28,7 +28,8 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     created_at: str
-    citations: List[CitationResponse] = []
+    citations: List[CitationSchema] = []
+
 
 
 class ConversationDetailResponse(ConversationResponse):
@@ -82,7 +83,7 @@ def get_conversation(
                                 if d_res.data:
                                     file_name = d_res.data[0].get("file_name", "Document")
                             citations.append(
-                                CitationResponse(
+                                CitationSchema(
                                     chunk_id=chunk_id,
                                     document_id=doc_id or "",
                                     file_name=file_name,

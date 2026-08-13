@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 import concurrent.futures
 from typing import List, Dict, Any, Optional
 from app.config import settings
@@ -10,29 +11,58 @@ from app.services.summarization_service import SummarizationService
 
 logger = logging.getLogger("talk_to_your_notes.rag_service")
 
-SYSTEM_GROUNDED_PROMPT = """You are Talk to Your Notes, a precise and trustworthy AI knowledge assistant.
+SYSTEM_GROUNDED_PROMPT = """You are Talk to Your Notes, an intelligent, conversational, and brilliant AI knowledge assistant (like Google Gemini Chat).
 
-Your primary role is to answer the user's question using ONLY the provided document context below.
+YOUR MISSION:
+1. Answer the user's question clearly, comprehensively, and intelligently formatted in clean Markdown.
+2. Use the provided document context below as your primary knowledge source and anchor.
+3. If the user's question is directly addressed in the document context, provide a detailed, accurate explanation supported by the notes.
+4. If the exact literal answer is not stated word-for-word in the notes, BUT the topic is related to the user's notes/documents, use your comprehensive AI reasoning to answer the question smoothly and helpfully while connecting to their notes' topic.
+5. Provide a natural, engaging, and friendly response (just like Gemini Chat). Do NOT output raw snippet code dumps or mechanical robotic disclaimers.
 
-STRICT GROUNDING & CITATION CONTRACT:
-1. Base your factual claims solely on the supplied document chunks.
-2. Do NOT invent facts, citations, file names, page numbers, or section titles.
-3. Every citation MUST reference the exact `chunk_id` string specified in the document header.
-4. Return your final answer as valid JSON matching this schema:
+STRICT CITATION CONTRACT:
+- Every citation MUST reference the exact `chunk_id` string specified in the document header.
+- Return your final answer as valid JSON matching this schema:
 {
-  "answer": "Detailed answer formatted in clean Markdown...",
+  "answer": "Comprehensive answer formatted in clean Markdown...",
   "citations": [
     {
       "chunk_id": "exact-uuid-from-context",
-      "reason": "Brief explanation of what claim this chunk supports"
+      "reason": "Brief explanation of how this document passage supports the answer"
     }
   ],
   "grounded": true
 }
-5. If the supplied document context is empty or contains insufficient information to answer the question, set "grounded": false and state: "I couldn't find enough information about that in your indexed notes." In this case, citations array MUST be empty [].
-6. Output ONLY the JSON object. Do not include markdown code block backticks outside the JSON.
+- Output ONLY the JSON object. Do not include markdown code block backticks outside the JSON.
 """
 
+SYSTEM_GENERAL_PROMPT = """You are Talk to Your Notes, an intelligent, conversational AI assistant (like Google Gemini Chat).
+
+The user has asked a question but there are no relevant documents in their notes for this topic.
+Answer their question using your own broad AI knowledge, helpfully and clearly in clean Markdown.
+Be friendly, thorough, and conversational — like a knowledgeable friend.
+
+Return your answer as valid JSON:
+{
+  "answer": "Your comprehensive Markdown answer here...",
+  "citations": [],
+  "grounded": false
+}
+Output ONLY the JSON object.
+"""
+
+# Ordered fallback chain — confirmed working models (tested live against the API)
+# Free tier has per-model quotas, so rotating through them gives more capacity
+GEMINI_FALLBACK_MODELS = [
+    "models/gemini-3.5-flash",
+    "models/gemini-3.5-flash-lite",
+    "models/gemini-3.1-flash-lite",
+    "models/gemini-3-flash-preview",
+    "models/gemini-flash-lite-latest",
+    "models/gemini-3.1-flash-lite-preview",
+    "models/gemma-4-26b-a4b-it",
+    "models/gemma-4-31b-it",
+]
 
 class VerifiedCitation:
     def __init__(
@@ -121,7 +151,7 @@ class RAGService:
     ) -> RAGResponse:
         # 1. Query Type Routing — Check if user is asking for a whole-document summary
         q_lower = user_query.lower().strip()
-        summary_triggers = ["summarise the entire notes", "summarise all notes", "summarize the entire notes", "summarize my notes", "overall summary of notes", "give me a summary of my notes"]
+        summary_triggers = ["summarise the entire notes", "summarise all notes", "summarize the entire notes", "summarize my notes", "overall summary of notes", "give me a summary of my notes", "tell me about my uploaded pdf", "tell me about the pdf", "tell me about the notes"]
         if any(t in q_lower for t in summary_triggers) or q_lower == "summarise notes" or q_lower == "summarize notes":
             summary_text = self.summarization_service.summarize_all_user_notes(user_id=user_id, collection_id=collection_id)
             return RAGResponse(
@@ -142,10 +172,17 @@ class RAGService:
             collection_id=collection_id
         )
 
-        # Retrieval Threshold Check
+        # Retrieval Threshold Check - no matching chunks found
         if not retrieved_chunks:
+            # Answer from AI general knowledge instead of dead-end error
+            general_prompt = (
+                f"{SYSTEM_GENERAL_PROMPT}\n\n"
+                f"USER QUESTION: {user_query}\n"
+            )
+            raw_json_str = self._call_gemini(general_prompt, packed_context=None)
+            answer_text, _, _ = self._parse_structured_response(raw_json_str, None)
             return RAGResponse(
-                answer="I couldn't find enough information about that in your indexed notes.",
+                answer=answer_text,
                 citations=[],
                 grounded=False,
                 retrieved_chunks_count=0,
@@ -166,7 +203,7 @@ class RAGService:
         full_prompt = (
             f"{SYSTEM_GROUNDED_PROMPT}\n\n"
             f"{formatted_history}"
-            f"DOCUMENT CONTEXT:\n{packed_context.formatted_context}\n\n"
+            f"DOCUMENT CONTEXT FROM USER NOTES:\n{packed_context.formatted_context}\n\n"
             f"USER QUESTION: {user_query}\n"
         )
 
@@ -243,62 +280,76 @@ class RAGService:
             f"Output ONLY the standalone search query string."
         )
 
+        return self._call_gemini_simple(prompt, default_fallback=f"{last_topic} {user_query}")
+
+    def _call_gemini_simple(self, prompt: str, default_fallback: str) -> str:
         if (
             settings.GEMINI_API_KEY
             and not settings.GEMINI_API_KEY.startswith("mock")
-            and not settings.GEMINI_API_KEY.startswith("gen-lang-client")
         ):
-            try:
-                import google.generativeai as genai
-                genai.configure(api_key=settings.GEMINI_API_KEY)
-                model_name = settings.LLM_MODEL or "gemini-flash-latest"
-                model = genai.GenerativeModel(model_name)
-                
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(model.generate_content, prompt)
-                    response = future.result(timeout=4.0)
-                    if response and response.text:
-                        return response.text.strip()
-            except Exception as e:
-                logger.warning(f"Query rewriting failed: {e}")
+            import google.generativeai as genai
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            for model_name in GEMINI_FALLBACK_MODELS:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(model.generate_content, prompt)
+                        response = future.result(timeout=8.0)
+                        if response and response.text:
+                            return response.text.strip()
+                except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str or "quota" in err_str.lower() or "exhausted" in err_str.lower():
+                        logger.warning(f"Simple call: {model_name} rate limited, trying next...")
+                        time.sleep(1)
+                        continue
+                    logger.warning(f"Simple Gemini call failed with {model_name}: {e}")
+                    continue
 
-        return f"{last_topic} {user_query}"
+        return default_fallback
 
     def _call_gemini(self, prompt: str, packed_context: Optional[PackedContext] = None) -> str:
         if (
             settings.GEMINI_API_KEY
             and not settings.GEMINI_API_KEY.startswith("mock")
-            and not settings.GEMINI_API_KEY.startswith("gen-lang-client")
         ):
-            import time
             import google.generativeai as genai
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            model_name = settings.LLM_MODEL or "gemini-flash-latest"
-            model = genai.GenerativeModel(model_name)
 
-            for attempt in range(3):
+            for model_name in GEMINI_FALLBACK_MODELS:
                 try:
+                    model = genai.GenerativeModel(model_name)
                     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                         future = executor.submit(model.generate_content, prompt)
-                        response = future.result(timeout=10.0)
+                        response = future.result(timeout=30.0)
                         if response and response.text:
-                            return response.text.strip()
+                            text = response.text.strip()
+                            # Skip if model returned meta-commentary instead of answer
+                            # (Gemma models sometimes output 'Topic: X. Constraint: Y.' as response)
+                            if text and len(text) > 20:
+                                return text
                 except Exception as e:
                     err_str = str(e)
-                    if "429" in err_str or "quota" in err_str.lower():
-                        logger.warning(f"Gemini rate limit hit (429), retrying in {3 * (attempt + 1)}s...")
-                        time.sleep(3 * (attempt + 1))
+                    if "429" in err_str or "quota" in err_str.lower() or "exhausted" in err_str.lower():
+                        logger.warning(f"Gemini model {model_name} rate limited (429), trying fallback model...")
+                        time.sleep(2)  # Brief wait before next model
                         continue
-                    logger.error(f"Gemini LLM call failed ({settings.LLM_MODEL}): {e}")
-                    break
+                    elif "not found" in err_str.lower() or "404" in err_str or "no longer available" in err_str.lower():
+                        logger.warning(f"Gemini model {model_name} not available, skipping...")
+                        continue
+                    logger.error(f"Gemini LLM call failed ({model_name}): {e}")
+                    continue
 
-        # Fallback offline response dynamically summarizing packed chunks
+        # All models exhausted - use top chunk content as readable fallback
         mock_cits = []
-        answer_summary = "I couldn't find enough information about that in your indexed notes."
+        answer_summary = "I'm currently unable to reach the AI service. Please try again in a moment."
         if packed_context and packed_context.packed_chunks:
             top_chunk = packed_context.packed_chunks[0]
             mock_cits = [{"chunk_id": top_chunk.id, "reason": "Primary retrieved context source"}]
-            answer_summary = f"Based on your notes:\n\n{top_chunk.content[:400]}"
+            answer_summary = (
+                f"Here is what your notes say about this topic:\n\n"
+                f"{top_chunk.content}"
+            )
 
         return json.dumps({
             "answer": answer_summary,
@@ -306,12 +357,13 @@ class RAGService:
             "grounded": bool(mock_cits)
         })
 
-    def _parse_structured_response(self, raw_str: str, packed_context: PackedContext):
+    def _parse_structured_response(self, raw_str: str, packed_context: Optional[PackedContext]):
         try:
             cleaned = raw_str.strip()
+            # Strip markdown code fences if present
             if cleaned.startswith("```json"):
                 cleaned = cleaned[7:]
-            if cleaned.startswith("```"):
+            elif cleaned.startswith("```"):
                 cleaned = cleaned[3:]
             if cleaned.endswith("```"):
                 cleaned = cleaned[:-3]
@@ -324,7 +376,9 @@ class RAGService:
             return answer, citations, grounded
         except Exception as e:
             logger.warning(f"Failed to parse structured JSON from Gemini: {e}")
+            # The model returned raw text (not JSON) - treat it as the answer directly
+            clean_ans = raw_str.strip()
             default_citations = []
-            if packed_context.packed_chunks:
+            if packed_context and packed_context.packed_chunks:
                 default_citations = [{"chunk_id": packed_context.packed_chunks[0].id, "reason": "Top matching context"}]
-            return raw_str, default_citations, True
+            return clean_ans, default_citations, True
