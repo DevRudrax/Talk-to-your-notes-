@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     SUPABASE_SECRET_KEY: Optional[str] = None
     SUPABASE_JWKS_URL: Optional[str] = None
 
+    DATABASE_URL: Optional[str] = None
+    POSTGRES_HOST: Optional[str] = None
+    POSTGRES_PORT: Optional[int] = 5432
+    POSTGRES_DB: Optional[str] = "postgres"
+    POSTGRES_USER: Optional[str] = "postgres"
+    POSTGRES_PASSWORD: Optional[str] = None
+
     GEMINI_API_KEY: str = "mock-gemini-key"
     LLM_MODEL: str = "gemini-1.5-flash"
     EMBEDDING_MODEL: str = "text-embedding-004"
