@@ -13,6 +13,13 @@ if root_dir not in sys.path:
 
 from app.main import app
 
-# Export ASGI app instance for Vercel serverless python runner
-handler = app
+try:
+    from mangum import Mangum
+    handler = Mangum(app)
+except ImportError:
+    handler = app
+
+# Export handler for Vercel serverless runtime
+app = handler
+
 
