@@ -1,4 +1,6 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8001";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL !== undefined
+  ? import.meta.env.VITE_BACKEND_URL
+  : (import.meta.env.DEV ? "http://localhost:8001" : "");
 
 export interface DocumentRecord {
   id: string;
