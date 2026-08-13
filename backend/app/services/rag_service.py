@@ -187,25 +187,29 @@ class RAGService:
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=settings.GEMINI_API_KEY)
-                model = genai.GenerativeModel(settings.LLM_MODEL)
+                model_name = settings.LLM_MODEL or "gemini-flash-latest"
+                model = genai.GenerativeModel(model_name)
                 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(model.generate_content, prompt)
-                    response = future.result(timeout=6.0)
+                    response = future.result(timeout=10.0)
                     if response and response.text:
                         return response.text
             except Exception as e:
-                logger.error(f"Gemini LLM call failed: {e}")
+                logger.error(f"Gemini LLM call failed ({settings.LLM_MODEL}): {e}")
 
-        # Fallback offline mock response for testing/offline/dev mode
+        # Fallback offline response dynamically summarizing packed chunks
         mock_cits = []
+        answer_summary = "I couldn't find enough information about that in your indexed notes."
         if packed_context and packed_context.packed_chunks:
-            mock_cits = [{"chunk_id": packed_context.packed_chunks[0].id, "reason": "Primary retrieved context source"}]
+            top_chunk = packed_context.packed_chunks[0]
+            mock_cits = [{"chunk_id": top_chunk.id, "reason": "Primary retrieved context source"}]
+            answer_summary = f"Based on your notes:\n\n{top_chunk.content[:400]}"
 
         return json.dumps({
-            "answer": "Based on your notes, Third Normal Form (3NF) requires 2NF compliance and eliminating transitive functional dependencies.",
+            "answer": answer_summary,
             "citations": mock_cits,
-            "grounded": True
+            "grounded": bool(mock_cits)
         })
 
     def _parse_structured_response(self, raw_str: str, packed_context: PackedContext):
