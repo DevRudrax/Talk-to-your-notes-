@@ -1,4 +1,3 @@
-import fitz  # PyMuPDF
 import re
 from typing import List, Dict, Any, Optional
 import logging

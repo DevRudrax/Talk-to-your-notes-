@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     MOCK_AUTH: bool = True
 
     model_config = SettingsConfigDict(
-        env_file=(ENV_PATH, ".env"),
+        env_file=[f for f in [ENV_PATH, ".env"] if os.path.exists(f)],
         env_file_encoding="utf-8",
         extra="ignore"
     )
