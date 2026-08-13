@@ -50,7 +50,44 @@ class ExtractionService:
     @staticmethod
     def extract_pdf(file_bytes: bytes) -> List[ExtractedSegment]:
         segments = []
+        # Try pypdf (pure Python, lightweight for Vercel) first, fallback to fitz
         try:
+            import io
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(file_bytes))
+            current_section = None
+            for page_num, page in enumerate(reader.pages):
+                page_number = page_num + 1
+                text = page.extract_text() or ""
+                if not text.strip():
+                    continue
+
+                lines = text.split('\n')
+                page_text_blocks = []
+                for line in lines:
+                    clean_line = line.strip()
+                    if not clean_line:
+                        continue
+                    if len(clean_line) < 60 and not clean_line.endswith(('.', ':', ';', ',')) and clean_line[0].isupper():
+                        current_section = clean_line
+                    page_text_blocks.append(clean_line)
+
+                page_content = "\n".join(page_text_blocks)
+                segments.append(
+                    ExtractedSegment(
+                        content=page_content,
+                        page_number=page_number,
+                        section_title=current_section,
+                        parent_section=None
+                    )
+                )
+            if segments:
+                return segments
+        except Exception as e:
+            logger.info(f"pypdf extraction failed or unavailable, trying fitz: {e}")
+
+        try:
+            import fitz
             doc = fitz.open(stream=file_bytes, filetype="pdf")
             current_section = None
 
@@ -64,12 +101,12 @@ class ExtractionService:
 
                 lines = text.split('\n')
                 page_text_blocks = []
-                
+
                 for line in lines:
                     clean_line = line.strip()
                     if not clean_line:
                         continue
-                    
+
                     if len(clean_line) < 60 and not clean_line.endswith(('.', ':', ';', ',')) and clean_line[0].isupper():
                         current_section = clean_line
 
