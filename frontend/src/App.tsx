@@ -15,6 +15,7 @@ export function App() {
   const [collections, setCollections] = useState<CollectionItem[]>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | undefined>(undefined);
   const [activeCitation, setActiveCitation] = useState<CitationItem | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -41,6 +42,7 @@ export function App() {
   const handleNewChat = () => {
     setActiveConversationId(undefined);
     setActiveTab('chat');
+    setIsMobileMenuOpen(false);
   };
 
   const handleConversationCreated = async (id: string) => {
@@ -66,6 +68,7 @@ export function App() {
     setSelectedCollectionId(colId);
     setActiveConversationId(undefined);
     setActiveTab('chat');
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -73,12 +76,20 @@ export function App() {
       {/* Navigation Sidebar */}
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
         conversations={conversations}
         activeConversationId={activeConversationId}
-        onSelectConversation={(id) => setActiveConversationId(id)}
+        onSelectConversation={(id) => {
+          setActiveConversationId(id);
+          setIsMobileMenuOpen(false);
+        }}
         onNewChat={handleNewChat}
         onDeleteConversation={handleDeleteConversation}
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Content Workspace View */}
@@ -90,11 +101,15 @@ export function App() {
           selectedCollectionId={selectedCollectionId}
           onSelectCollection={(id) => setSelectedCollectionId(id)}
           onOpenCitation={(cit) => setActiveCitation(cit)}
+          onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
         />
       )}
 
       {activeTab === 'documents' && (
-        <DocumentManagement collections={collections} />
+        <DocumentManagement
+          collections={collections}
+          onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
+        />
       )}
 
       {activeTab === 'collections' && (
@@ -103,6 +118,7 @@ export function App() {
           documents={documents}
           onRefreshCollections={loadData}
           onSelectCollectionForChat={handleSelectCollectionForChat}
+          onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
         />
       )}
 

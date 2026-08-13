@@ -4,9 +4,13 @@ import type { DocumentRecord, CollectionItem } from '../api';
 
 interface DocumentManagementProps {
   collections: CollectionItem[];
+  onToggleMobileMenu?: () => void;
 }
 
-export const DocumentManagement: React.FC<DocumentManagementProps> = ({ collections }) => {
+export const DocumentManagement: React.FC<DocumentManagementProps> = ({
+  collections,
+  onToggleMobileMenu,
+}) => {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -75,26 +79,35 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ collecti
   );
 
   return (
-    <div className="flex-1 flex flex-col h-screen ml-[250px] bg-surface overflow-y-auto">
+    <div className="flex-1 flex flex-col h-screen w-full ml-0 md:ml-[250px] bg-surface overflow-y-auto">
       {/* Top Header */}
-      <header className="h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-8 z-10 sticky top-0">
-        <div>
-          <h2 className="text-base font-bold text-on-surface">Notes & Document Management</h2>
-          <p className="text-xs text-outline">Manage your indexed PDF, Markdown, and TXT files</p>
+      <header className="h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-4 md:px-8 z-10 sticky top-0">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={onToggleMobileMenu}
+            className="md:hidden p-1.5 rounded-lg text-on-surface hover:bg-surface-container transition-colors"
+            aria-label="Toggle navigation menu"
+          >
+            <span className="material-symbols-outlined text-[24px]">menu</span>
+          </button>
+          <div>
+            <h2 className="text-sm md:text-base font-bold text-on-surface">Notes & Document Management</h2>
+            <p className="text-[11px] md:text-xs text-outline hidden sm:block">Manage your indexed PDF, Markdown, and TXT files</p>
+          </div>
         </div>
 
         <button
           onClick={fetchDocuments}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border border-outline-variant rounded-lg text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 bg-surface-container border border-outline-variant rounded-lg text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors"
         >
           <span className="material-symbols-outlined text-[16px]">refresh</span>
-          <span>Refresh</span>
+          <span className="hidden sm:inline">Refresh</span>
         </button>
       </header>
 
-      <div className="p-8 max-w-5xl w-full mx-auto space-y-8">
+      <div className="p-4 md:p-8 max-w-5xl w-full mx-auto space-y-6 md:space-y-8">
         {/* File Upload Dropzone */}
-        <div className="bg-surface-container-lowest border-2 border-dashed border-outline-variant hover:border-primary rounded-2xl p-8 text-center transition-all">
+        <div className="bg-surface-container-lowest border-2 border-dashed border-outline-variant hover:border-primary rounded-2xl p-4 md:p-8 text-center transition-all">
           <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mx-auto mb-3 shadow-xs">
             <span className="material-symbols-outlined text-[24px]">cloud_upload</span>
           </div>
@@ -174,8 +187,8 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ collecti
               No documents found. Upload your first note or PDF above!
             </div>
           ) : (
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs">
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-x-auto shadow-xs">
+              <table className="w-full text-left text-xs min-w-[600px]">
                 <thead className="bg-surface-container-low border-b border-outline-variant text-on-surface font-semibold">
                   <tr>
                     <th className="px-4 py-3">File Name</th>

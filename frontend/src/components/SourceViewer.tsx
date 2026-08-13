@@ -11,9 +11,9 @@ export const SourceViewer: React.FC<SourceViewerProps> = ({ citation, onClose })
 
   return (
     <div className="fixed inset-0 z-50 bg-on-surface/20 backdrop-blur-xs flex justify-end">
-      <div className="w-full max-w-lg bg-surface h-full shadow-2xl border-l border-outline-variant flex flex-col animate-in slide-in-from-right duration-200">
+      <div className="w-full sm:max-w-lg bg-surface h-full shadow-2xl border-l border-outline-variant flex flex-col animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[22px] text-primary">
               menu_book
@@ -31,7 +31,7 @@ export const SourceViewer: React.FC<SourceViewerProps> = ({ citation, onClose })
         </div>
 
         {/* Content */}
-        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto space-y-4 sm:space-y-6">
           {/* File Metadata */}
           <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl space-y-2">
             <div className="flex items-center gap-2 text-primary font-semibold text-sm">

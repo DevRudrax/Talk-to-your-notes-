@@ -7,6 +7,7 @@ interface CollectionsOverviewProps {
   documents: DocumentRecord[];
   onRefreshCollections: () => void;
   onSelectCollectionForChat: (colId: string) => void;
+  onToggleMobileMenu?: () => void;
 }
 
 export const CollectionsOverview: React.FC<CollectionsOverviewProps> = ({
@@ -14,6 +15,7 @@ export const CollectionsOverview: React.FC<CollectionsOverviewProps> = ({
   documents,
   onRefreshCollections,
   onSelectCollectionForChat,
+  onToggleMobileMenu,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState('');
@@ -49,24 +51,33 @@ export const CollectionsOverview: React.FC<CollectionsOverviewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen ml-[250px] bg-surface overflow-y-auto">
+    <div className="flex-1 flex flex-col h-screen w-full ml-0 md:ml-[250px] bg-surface overflow-y-auto">
       {/* Top Header */}
-      <header className="h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-8 z-10 sticky top-0">
-        <div>
-          <h2 className="text-base font-bold text-on-surface">Collections Overview</h2>
-          <p className="text-xs text-outline">Organize notes and documents into topic collections</p>
+      <header className="h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-4 md:px-8 z-10 sticky top-0">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={onToggleMobileMenu}
+            className="md:hidden p-1.5 rounded-lg text-on-surface hover:bg-surface-container transition-colors"
+            aria-label="Toggle navigation menu"
+          >
+            <span className="material-symbols-outlined text-[24px]">menu</span>
+          </button>
+          <div>
+            <h2 className="text-sm md:text-base font-bold text-on-surface">Collections Overview</h2>
+            <p className="text-[11px] md:text-xs text-outline hidden sm:block">Organize notes and documents into topic collections</p>
+          </div>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-on-surface text-surface rounded-lg text-xs font-medium hover:bg-inverse-surface transition-colors shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-on-surface text-surface rounded-lg text-xs font-medium hover:bg-inverse-surface transition-colors shadow-xs"
         >
           <span className="material-symbols-outlined text-[16px]">create_new_folder</span>
-          <span>New Collection</span>
+          <span className="hidden sm:inline">New Collection</span>
         </button>
       </header>
 
-      <div className="p-8 max-w-5xl w-full mx-auto space-y-8">
+      <div className="p-4 md:p-8 max-w-5xl w-full mx-auto space-y-6 md:space-y-8">
         {collections.length === 0 ? (
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-12 text-center space-y-3">
             <div className="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mx-auto">

@@ -9,6 +9,8 @@ interface SidebarProps {
   onSelectConversation: (id: string) => void;
   onNewChat: () => void;
   onDeleteConversation?: (id: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -19,6 +21,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectConversation,
   onNewChat,
   onDeleteConversation,
+  isOpen = false,
+  onClose,
 }) => {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
@@ -31,16 +35,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      <nav className="fixed h-screen w-[250px] left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-6 z-20 select-none">
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Navigation Sidebar Drawer */}
+      <nav
+        className={`fixed h-screen w-[280px] md:w-[250px] left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-6 z-50 select-none transition-transform duration-200 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         {/* Brand & New Chat */}
         <div className="px-4 pb-6 border-b border-outline-variant">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm shadow-sm">
-              TN
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm shadow-sm">
+                TN
+              </div>
+              <div className="text-lg font-bold text-on-surface tracking-tight">
+                Talk to Your Notes
+              </div>
             </div>
-            <div className="text-lg font-bold text-on-surface tracking-tight">
-              Talk to Your Notes
-            </div>
+            {/* Mobile Close Button */}
+            <button
+              onClick={onClose}
+              className="md:hidden p-1 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+              aria-label="Close menu"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
           </div>
           <button
             onClick={onNewChat}
